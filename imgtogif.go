@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 )
@@ -46,36 +45,16 @@ func main() {
 	fmt.Println("Successfully converted JPEG to GIF!")
 }
 
-func readJpegFile(filePath string) ([]byte, error) {
-	// Open the file
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open file: %s", filePath)
-	}
-	defer file.Close() // Close the file on exit
-
-	// Read the file data
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read file data: %s", filePath)
-	}
-
-	return data, nil
-}
-
-func ToGif(filePath string) ([]byte, error) {
+func ToGif(filePath string) ([]byte, error) { // Convert a still JPG or PNG file to GIF
 	var imageData []byte // Initialize with an empty slice of bytes
 	var err error
-
-	if filepath.Ext(filePath) == ".jpeg" {
-		// Read JPEG data
-		imageData, err = readJpegFile(filePath)
-		if err != nil {
-			fmt.Println("Error reading JPEG:", err)
-			return nil, err // Return nil data and the error
-		}
-
+	// Read the image data
+	imageData, err = readImgFile(filePath)
+	if err != nil {
+		fmt.Println("Error reading JPEG:", err)
+		return nil, err // Return nil data and the error
 	}
+
 	contentType := http.DetectContentType(imageData)
 
 	var img image.Image
@@ -101,4 +80,21 @@ func ToGif(filePath string) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func readImgFile(filePath string) ([]byte, error) { // Read the Image file data
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to open file: %s", filePath)
+	}
+	defer file.Close() // Close the file on exit
+
+	// Read the file data
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read file data: %s", filePath)
+	}
+
+	return data, nil
 }
