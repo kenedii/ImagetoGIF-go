@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 )
@@ -20,15 +21,8 @@ func main() {
 	fmt.Println("Enter the path to the JPEG file:")
 	fmt.Scanln(&filePath)
 
-	// Read JPEG data
-	imageData, err := readJpegFile(filePath)
-	if err != nil {
-		fmt.Println("Error reading JPEG:", err)
-		return
-	}
-
 	// Convert to GIF
-	gifData, err := ToGif(imageData)
+	gifData, err := ToGif(filePath)
 	if err != nil {
 		fmt.Println("Error converting to GIF:", err)
 		return
@@ -69,20 +63,31 @@ func readJpegFile(filePath string) ([]byte, error) {
 	return data, nil
 }
 
-func ToGif(imageBytes []byte) ([]byte, error) {
-	contentType := http.DetectContentType(imageBytes)
+func ToGif(filePath string) ([]byte, error) {
+	var imageData []byte // Initialize with an empty slice of bytes
+	var err error
+
+	if filepath.Ext(filePath) == ".jpeg" {
+		// Read JPEG data
+		imageData, err = readJpegFile(filePath)
+		if err != nil {
+			fmt.Println("Error reading JPEG:", err)
+			return nil, err // Return nil data and the error
+		}
+
+	}
+	contentType := http.DetectContentType(imageData)
 
 	var img image.Image
-	var err error
 
 	switch contentType {
 	case "image/png":
-		img, err = png.Decode(bytes.NewReader(imageBytes))
+		img, err = png.Decode(bytes.NewReader(imageData))
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to decode png")
 		}
 	case "image/jpeg":
-		img, err = jpeg.Decode(bytes.NewReader(imageBytes))
+		img, err = jpeg.Decode(bytes.NewReader(imageData))
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to decode jpeg")
 		}
