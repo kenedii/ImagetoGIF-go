@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"image/gif"
+	"image/jpeg"
 	"io/ioutil"
+	"net/http"
 	"os"
 
 	"github.com/pkg/errors"
@@ -23,7 +27,7 @@ func main() {
 	}
 
 	// Convert to GIF
-	gifData, err := ToPng(imageData)
+	gifData, err := ToGif(imageData)
 	if err != nil {
 		fmt.Println("Error converting to GIF:", err)
 		return
@@ -62,4 +66,27 @@ func readJpegFile(filePath string) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+// ToPng converts an image to png
+func ToGif(imageBytes []byte) ([]byte, error) {
+	contentType := http.DetectContentType(imageBytes)
+
+	switch contentType {
+	case "image/png":
+	case "image/jpeg":
+		img, err := jpeg.Decode(bytes.NewReader(imageBytes))
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to decode jpeg")
+		}
+
+		buf := new(bytes.Buffer)
+		if err := gif.Encode(buf, img); err != nil {
+			return nil, errors.Wrap(err, "unable to encode png")
+		}
+
+		return buf.Bytes(), nil
+	}
+
+	return nil, fmt.Errorf("unable to convert %#v to png", contentType)
 }
