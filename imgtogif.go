@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"image/color"
+	"image/draw"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 )
@@ -76,6 +79,62 @@ func ToGif(filePath string) ([]byte, error) { // Convert a still JPG or PNG file
 
 	buf := new(bytes.Buffer)
 	if err := gif.Encode(buf, img, nil); err != nil {
+		return nil, errors.Wrap(err, "unable to encode gif")
+	}
+
+	return buf.Bytes(), nil
+}
+
+func ToGifA(folder string) ([]byte, error) {
+	files, err := ioutil.ReadDir(folder) // Get the list of files in the folder
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to read folder")
+	}
+
+	anim := gif.GIF{}
+	pal := make(color.Palette, 256)
+	for i := range pal {
+		pal[i] = color.Gray{Y: uint8(i)}
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		filePath := filepath.Join(folder, file.Name())
+		imageData, err := readImgFile(filePath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to read image file: %s", filePath)
+		}
+
+		contentType := http.DetectContentType(imageData)
+		var img image.Image
+
+		switch contentType {
+		case "image/png":
+			img, err = png.Decode(bytes.NewReader(imageData))
+			if err != nil {
+				return nil, errors.Wrap(err, "unable to decode png")
+			}
+		case "image/jpeg":
+			img, err = jpeg.Decode(bytes.NewReader(imageData))
+			if err != nil {
+				return nil, errors.Wrap(err, "unable to decode jpeg")
+			}
+		default:
+			return nil, fmt.Errorf("unsupported image type: %s", contentType)
+		}
+
+		bounds := img.Bounds()
+		pm := image.NewPaletted(bounds, pal)
+		draw.Draw(pm, bounds, img, image.Point{}, draw.Src)
+		anim.Image = append(anim.Image, pm)
+		anim.Delay = append(anim.Delay, 0) // 0 delay for instant transition between frames
+	}
+
+	buf := new(bytes.Buffer)
+	if err := gif.EncodeAll(buf, &anim); err != nil {
 		return nil, errors.Wrap(err, "unable to encode gif")
 	}
 
