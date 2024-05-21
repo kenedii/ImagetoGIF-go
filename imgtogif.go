@@ -24,7 +24,7 @@ func main() {
 	fmt.Scanln(&filePath)
 
 	// Convert to GIF
-	gifData, err := ToGif(filePath)
+	gifData, err := ToGifA(filePath)
 	if err != nil {
 		fmt.Println("Error converting to GIF:", err)
 		return
@@ -48,7 +48,7 @@ func main() {
 	fmt.Println("Successfully converted JPEG to GIF!")
 }
 
-func ToGif(filePath string) ([]byte, error) { // Convert a still JPG or PNG file to GIF
+func ToGif(filePath string, saveFile bool, saveFileName string) ([]byte, error) { // Convert a still JPG or PNG file to GIF
 	var imageData []byte // Initialize with an empty slice of bytes
 	var err error
 	// Read the image data
@@ -81,7 +81,22 @@ func ToGif(filePath string) ([]byte, error) { // Convert a still JPG or PNG file
 	if err := gif.Encode(buf, img, nil); err != nil {
 		return nil, errors.Wrap(err, "unable to encode gif")
 	}
+	if saveFile {
+		// Create output file
+		outFile, err := os.Create(saveFileName + ".gif") // Replace with desired output filename
+		if err != nil {
+			fmt.Println("Error creating output file:", err)
+			return nil, err
+		}
+		defer outFile.Close() // Close the output file on exit
 
+		// Write GIF data to file
+		_, err = outFile.Write(buf.Bytes())
+		if err != nil {
+			fmt.Println("Error writing GIF data:", err)
+			return nil, err
+		}
+	}
 	return buf.Bytes(), nil
 }
 
