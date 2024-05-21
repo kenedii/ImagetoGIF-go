@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"image/gif"
 	"image/jpeg"
+	"image/png"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -12,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ToPng converts an image to png
 func main() {
 	// Get JPEG file path (prompt user or use a hardcoded path)
 	var filePath string
@@ -68,25 +69,31 @@ func readJpegFile(filePath string) ([]byte, error) {
 	return data, nil
 }
 
-// ToPng converts an image to png
 func ToGif(imageBytes []byte) ([]byte, error) {
 	contentType := http.DetectContentType(imageBytes)
 
+	var img image.Image
+	var err error
+
 	switch contentType {
 	case "image/png":
+		img, err = png.Decode(bytes.NewReader(imageBytes))
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to decode png")
+		}
 	case "image/jpeg":
-		img, err := jpeg.Decode(bytes.NewReader(imageBytes))
+		img, err = jpeg.Decode(bytes.NewReader(imageBytes))
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to decode jpeg")
 		}
-
-		buf := new(bytes.Buffer)
-		if err := gif.Encode(buf, img); err != nil {
-			return nil, errors.Wrap(err, "unable to encode png")
-		}
-
-		return buf.Bytes(), nil
+	default:
+		return nil, fmt.Errorf("unsupported image type: %s", contentType)
 	}
 
-	return nil, fmt.Errorf("unable to convert %#v to png", contentType)
+	buf := new(bytes.Buffer)
+	if err := gif.Encode(buf, img, nil); err != nil {
+		return nil, errors.Wrap(err, "unable to encode gif")
+	}
+
+	return buf.Bytes(), nil
 }
