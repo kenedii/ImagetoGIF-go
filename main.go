@@ -47,5 +47,6 @@ func main() {
 	}
 
 	fmt.Println("Successfully converted image(s) to GIF!")
+	fmt.Println("Press Enter to exit...")
 	fmt.Scanln()
 }
