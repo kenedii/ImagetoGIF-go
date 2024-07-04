@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	"imgtogif"
 )
@@ -26,8 +27,28 @@ func main() {
 
 	// Convert to Animated GIF
 	if isAnimated == "a" {
+		// Get amount time between frames in milliseconds
+		var framePeriod int
+		fmt.Println("Enter the amount time between frames in milliseconds (press enter for 0)")
+		// Scan the user input into a temporary variable
+		var input string
+		_, err := fmt.Scanln(&input)
+		if err != nil || input == "" {
+			// Handle error or empty input (set a default value)
+			framePeriod = 0
+		} else {
+			// Convert the input string to int using strconv.Atoi
+			f, err := strconv.Atoi(input)
+			if err != nil {
+				// Handle error (set a default value)
+				framePeriod = 0
+			} else {
+				framePeriod = f / 10
+			}
+		}
+
 		// Convert to GIF
-		_gifData, err := imgtogif.ToGifA(filePath, &saveFiles, &saveFilePath)
+		_gifData, err := imgtogif.ToGifA(filePath, &saveFiles, &saveFilePath, &framePeriod)
 		if err != nil {
 			fmt.Println("Error converting to GIF:", err)
 			return

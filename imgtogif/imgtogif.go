@@ -78,7 +78,7 @@ func ToGif(filePath string, saveFile *bool, saveFileName *string) ([]byte, error
 	return buf.Bytes(), nil
 }
 
-func ToGifA(folder string, saveFile *bool, saveFileName *string) ([]byte, error) {
+func ToGifA(folder string, saveFile *bool, saveFileName *string, framePeriod *int) ([]byte, error) {
 	if saveFileName == nil {
 		defaultName := "output"
 		saveFileName = &defaultName
@@ -86,6 +86,10 @@ func ToGifA(folder string, saveFile *bool, saveFileName *string) ([]byte, error)
 	if saveFile == nil {
 		defaultSaveValue := true
 		saveFile = &defaultSaveValue
+	}
+	if framePeriod == nil { // Milliseconds between frames
+		defaultFramePeriod := 0
+		framePeriod = &defaultFramePeriod
 	}
 
 	files, err := ioutil.ReadDir(folder) // Get the list of files in the folder
@@ -130,7 +134,7 @@ func ToGifA(folder string, saveFile *bool, saveFileName *string) ([]byte, error)
 		pm := image.NewPaletted(bounds, palette)
 		draw.Draw(pm, bounds, img, image.Point{}, draw.Src)
 		anim.Image = append(anim.Image, pm)
-		anim.Delay = append(anim.Delay, 0) // 0 delay for instant transition between frames
+		anim.Delay = append(anim.Delay, int(*framePeriod)) // Convert float64 to int for delay
 	}
 
 	buf := new(bytes.Buffer)
